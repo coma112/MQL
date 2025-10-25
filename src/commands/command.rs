@@ -1,7 +1,23 @@
+use crate::database::Database;
+
+#[derive(Debug)]
+pub struct Context {
+    pub current_database: Option<String>,
+}
+
+impl Context {
+    pub fn new() -> Self {
+        Context {
+            current_database: None,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum Command {
     Create(CreateType),
     Drop(DropType),
+    Use(String),
     Help,
     Exit,
 }
@@ -30,7 +46,7 @@ impl Command {
         match parts[0] {
             "LÉTREHOZ" => {
                 if parts.len() < 3 {
-                    return Err("Használat: LÉTREHOZ TÁBLA/ADATBÁZIS/ <név>".to_string());
+                    return Err("Használat: LÉTREHOZ TÁBLA/ADATBÁZIS <név>".to_string());
                 }
 
                 let name = parts[2].to_string();
@@ -60,23 +76,41 @@ impl Command {
                 Ok(Command::Drop(drop_type))
             }
 
-            "HELP" => Ok(Command::Help),
+            "HASZNÁL" => {
+                if parts.len() < 2 {
+                    return Err("Használat: HASZNÁL <adatbázis_név>".to_string());
+                }
+                Ok(Command::Use(parts[1].to_string()))
+            }
 
-            "EXIT" | "QUIT" => Ok(Command::Exit),
+            "HELP" | "SEGÍTSÉG" => Ok(Command::Help),
+
+            "EXIT" | "QUIT" | "KILÉP" => Ok(Command::Exit),
 
             _ => Err(format!("Ismeretlen parancs: '{}'", parts[0])),
         }
     }
 
-    pub fn execute(&self) {
+    pub fn execute(&self, context: &mut Context) -> Result<(), String> {
         match self {
             Command::Create(create_type) => {
                 match create_type {
                     CreateType::Table(name) => {
-                        println!("Tábla létrehozva: {}", name);
+                        let db_name = context.current_database.as_ref()
+                            .ok_or("Nincs kiválasztva adatbázis! Használd: HASZNÁL <adatbázis>")?;
+
+                        let mut db = Database::load(db_name)?;
+                        db.create_table(name.clone())?;
+
+                        println!("✓ Tábla létrehozva: {}", name);
+                        Ok(())
                     }
                     CreateType::Database(name) => {
-                        println!("Adatbázis létrehozva: {}", name);
+                        let db = Database::new(name.clone());
+                        db.save()?;
+
+                        println!("✓ Adatbázis létrehozva: {}", name);
+                        Ok(())
                     }
                 }
             }
@@ -84,26 +118,51 @@ impl Command {
             Command::Drop(drop_type) => {
                 match drop_type {
                     DropType::Table(name) => {
-                        println!("Tábla törölve: {}", name);
+                        let db_name = context.current_database.as_ref()
+                            .ok_or("Nincs kiválasztva adatbázis!")?;
+
+                        let mut db = Database::load(db_name)?;
+                        db.drop_table(name)?;
+
+                        println!("✓ Tábla törölve: {}", name);
+                        Ok(())
                     }
                     DropType::Database(name) => {
-                        println!("Adatbázis törölve: {}", name);
+                        Database::delete(name)?;
+
+                        if context.current_database.as_ref() == Some(name) {
+                            context.current_database = None;
+                        }
+
+                        println!("✓ Adatbázis törölve: {}", name);
+                        Ok(())
                     }
                 }
             }
 
+            Command::Use(db_name) => {
+                // Ellenőrizzük, hogy létezik-e az adatbázis
+                Database::load(db_name)?;
+                context.current_database = Some(db_name.clone());
+                println!("✓ Adatbázis kiválasztva: {}", db_name);
+                Ok(())
+            }
+
             Command::Help => {
                 println!("\nElérhető MQL parancsok:");
-                println!("  CREATE TABLE <név>     - Tábla létrehozása");
-                println!("  CREATE DATABASE <név>  - Adatbázis létrehozása");
-                println!("  DROP TABLE <név>       - Tábla törlése");
-                println!("  DROP DATABASE <név>    - Adatbázis törlése");
-                println!("  HELP                   - Súgó");
-                println!("  EXIT                   - Kilépés\n");
+                println!("  LÉTREHOZ TÁBLA <név>       - Tábla létrehozása");
+                println!("  LÉTREHOZ ADATBÁZIS <név>   - Adatbázis létrehozása");
+                println!("  LEDOB TÁBLA <név>          - Tábla törlése");
+                println!("  LEDOB ADATBÁZIS <név>      - Adatbázis törlése");
+                println!("  HASZNÁL <adatbázis>        - Adatbázis kiválasztása");
+                println!("  HELP                       - Súgó");
+                println!("  EXIT                       - Kilépés\n");
+                Ok(())
             }
 
             Command::Exit => {
                 println!(":(");
+                Ok(())
             }
         }
     }

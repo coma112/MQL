@@ -1,10 +1,12 @@
 mod commands;
+mod database;
 
 use std::io::{self, Write};
-use commands::Command;
+use commands::{Command, Context};
 
 fn main() {
     println!("=== MQL CONSOLE ===");
+    let mut context = Context::new();
 
     loop {
         print!("sql> ");
@@ -15,10 +17,13 @@ fn main() {
 
         match Command::parse(&input) {
             Ok(command) => {
-                command.execute();
-
                 if matches!(command, Command::Exit) {
+                    println!(":(");
                     break;
+                }
+
+                if let Err(e) = command.execute(&mut context) {
+                    println!("❌ Hiba: {}", e);
                 }
             }
             Err(error) => {

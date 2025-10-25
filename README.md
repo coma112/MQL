@@ -4,6 +4,9 @@
 
 Az MQL (Magyar Query Language) egy SQL-szerű nyelv, amely 100%-ban magyar kulcsszavakat használ. 
 A projekt csak viccből készül(t).
+Nem egy szerveren van tárolva az adat hanem JSON fájlokba.
+
+Minden JSON fájl egy adatbázis és azon belül vannak táblák.
 
 ## Telepítés és használat
 
@@ -57,7 +60,8 @@ EXIT
 - [ ] `HOL` - WHERE (feltételek)
 - [ ] `RENDEZ` - ORDER BY (rendezés)
 - [ ] `CSOPORT` - GROUP BY (csoportosítás)
-- [ ] `ÖSSZEKAPCSOL` - JOIN (táblák összekapcsolása)
+- [ ] `Típusok` - INTEGER/INT (EGÉSZ_SZÁM), STRING (HÚR), BOOL (LOGIKAI_ÉRTÉK)
+- [ ] `Operátorok` - Ezek megmaradnak mint szimbólumok:)
 
 ## Miért?
 
@@ -67,7 +71,7 @@ Mert miért ne?
 
 Pull requestek és ötletek mindig szívesen látottak! Ha van ötleted, hogy melyik SQL kulcsszó milyen magyar megfelelőt kapjon, nyiss egy issue-t!
 
-## Licenc
+## License
 
 Ez egy viccprojekt, használd szabadon!
 
